@@ -117,7 +117,7 @@ func (tors *TopicOffsetRanges) Store() error {
 	}
 
 	for p, or := range tors.PartitionRanges {
-		log.Debugf("TopicOffsetRanges::Store: %d %d", p, len(or.Ranges))
+		log.Debugf("TopicOffsetRanges::Store: partition %d has %d ranges", p, len(or.Ranges))
 	}
 
 	return nil

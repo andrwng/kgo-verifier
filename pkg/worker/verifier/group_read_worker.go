@@ -108,6 +108,8 @@ func (cgs *ConsumerGroupOffsets) AddRecord(ctx context.Context, r *kgo.Record) {
 	}
 
 	if cgs.maxReadCount >= 0 && cgs.curReadCount >= cgs.maxReadCount {
+		log.Debugf(
+			"Finished reading for %s/%d: %d / %d records read", r.Topic, r.Partition, cgs.curReadCount, cgs.maxReadCount)
 		cgs.cancelFunc()
 		return
 	}
@@ -117,10 +119,12 @@ func (cgs *ConsumerGroupOffsets) AddRecord(ctx context.Context, r *kgo.Record) {
 		for p, hwm := range cgs.upTo {
 			if cgs.lastSeen[p] < hwm-1 {
 				allComplete = false
+				log.Debugf("Not done reading after reading %s/%d: %d < %d", r.Topic, p, cgs.lastSeen[p], hwm-1)
 				break
 			}
 		}
 		if allComplete {
+			log.Debugf("Finished reading for %s/%d: all partitions groups read up to high watermark")
 			cgs.cancelFunc()
 		}
 	}
@@ -215,6 +219,9 @@ func (grw *GroupReadWorker) consumerGroupReadInner(
 	validRanges := LoadTopicOffsetRanges(grw.config.workerCfg.Topic, grw.config.nPartitions)
 
 	for {
+		if ctx.Err() == context.Canceled {
+			break
+		}
 		fetches := client.PollFetches(ctx)
 		if ctx.Err() == context.Canceled {
 			break
